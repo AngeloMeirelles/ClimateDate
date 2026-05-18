@@ -81,8 +81,8 @@ export const regions: Region[] = [
 ];
 
 export const riskLevelConfig: Record<string, { label: string; color: string; bg: string; mapColor: string }> = {
-  baixo: { label: "Baixo", color: "text-emerald-700", bg: "bg-emerald-500", mapColor: "#10b981" },
-  medio: { label: "Médio", color: "text-amber-700", bg: "bg-amber-500", mapColor: "#f59e0b" },
-  alto: { label: "Alto", color: "text-orange-700", bg: "bg-orange-500", mapColor: "#f97316" },
-  critico: { label: "Crítico", color: "text-red-700", bg: "bg-red-500", mapColor: "#ef4444" },
+  baixo: { label: "Baixo", color: "text-emerald-400", bg: "bg-emerald-500", mapColor: "#34d399" },
+  medio: { label: "Médio", color: "text-amber-400", bg: "bg-amber-500", mapColor: "#fbbf24" },
+  alto: { label: "Alto", color: "text-orange-400", bg: "bg-orange-500", mapColor: "#fb923c" },
+  critico: { label: "Crítico", color: "text-red-400", bg: "bg-red-500", mapColor: "#f87171" },
 };

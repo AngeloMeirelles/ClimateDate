@@ -1,57 +1,116 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f0fdf4;
-  --foreground: #1a2e1a;
-  --primary: #0d9488;
-  --primary-light: #5eead4;
-  --primary-dark: #0f766e;
-  --accent: #06b6d4;
-  --surface: #ffffff;
-  --surface-hover: #f7fef9;
-  --muted: #6b7280;
-  --border: #d1fae5;
+  --bg-primary: #0f0a1e;
+  --bg-secondary: #1a1035;
+  --bg-card: rgba(255, 255, 255, 0.06);
+  --bg-card-hover: rgba(255, 255, 255, 0.1);
+  --bg-glass: rgba(255, 255, 255, 0.08);
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --text-primary: #f1f0f5;
+  --text-secondary: #a5a0b8;
+  --text-muted: #6b6580;
+  --accent: #7c5cfc;
+  --accent-light: #a78bfa;
+  --accent-cyan: #22d3ee;
+  --accent-pink: #e879f9;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-light: var(--primary-light);
-  --color-primary-dark: var(--primary-dark);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+  --color-bg-glass: var(--bg-glass);
+  --color-border-glass: var(--border-glass);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
   --color-accent: var(--accent);
-  --color-surface: var(--surface);
-  --color-surface-hover: var(--surface-hover);
-  --color-muted: var(--muted);
-  --color-border: var(--border);
+  --color-accent-light: var(--accent-light);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-pink: var(--accent-pink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  background: #0f0a1e;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: linear-gradient(145deg, #0f0a1e 0%, #1a1035 40%, #0d1a2d 100%);
+  background-attachment: fixed;
+  color: var(--text-primary);
   font-family: var(--font-sans), system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glass card utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #a7f3d0;
+  background: rgba(124, 92, 252, 0.3);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6ee7b7;
+  background: rgba(124, 92, 252, 0.5);
 }
 
-/* Smooth transitions */
-* {
-  transition-property: background-color, border-color, color, opacity, box-shadow;
-  transition-duration: 150ms;
-  transition-timing-function: ease;
+/* Selection */
+::selection {
+  background: rgba(124, 92, 252, 0.4);
+  color: white;
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  outline: 2px solid rgba(124, 92, 252, 0.6);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Recharts text color fix for dark theme */
+.recharts-text {
+  fill: rgba(255, 255, 255, 0.5) !important;
+}
+.recharts-legend-item-text {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+.recharts-cartesian-axis-tick-value {
+  fill: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Select dropdown styling for dark theme */
+select option {
+  background: #1a1035;
+  color: white;
 }

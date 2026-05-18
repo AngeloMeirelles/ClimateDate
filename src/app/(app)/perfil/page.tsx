@@ -49,14 +49,14 @@ export default function PerfilPage() {
       />
 
       {/* Profile Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div className="bg-white/[0.06] backdrop-blur-xl border border-white/10 rounded-2xl p-6">
         <div className="flex items-center gap-5">
-          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white text-xl font-bold shadow-md">
+          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-violet-500/20">
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold text-gray-800">{user?.name ?? "Usuário"}</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+            <h2 className="text-xl font-bold text-white">{user?.name ?? "Usuário"}</h2>
+            <div className="flex items-center gap-2 text-sm text-white/50 mt-1">
               <Mail className="h-4 w-4" />
               <span className="truncate">{user?.email ?? "email@exemplo.com"}</span>
             </div>
@@ -64,8 +64,8 @@ export default function PerfilPage() {
               <span
                 className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full ${
                   accountType === "avancada"
-                    ? "bg-purple-50 text-purple-700 border border-purple-200"
-                    : "bg-gray-100 text-gray-600 border border-gray-200"
+                    ? "bg-purple-500/20 text-purple-300 border border-purple-500/20"
+                    : "bg-white/[0.06] text-white/60 border border-white/10"
                 }`}
               >
                 {accountType === "avancada" ? (
@@ -81,22 +81,22 @@ export default function PerfilPage() {
       </div>
 
       {/* Settings Form */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-        <h3 className="text-lg font-bold text-gray-800">Configurações</h3>
+      <div className="bg-white/[0.06] backdrop-blur-xl border border-white/10 rounded-2xl p-6 space-y-6">
+        <h3 className="text-lg font-bold text-white">Configurações</h3>
 
         {/* Region */}
         <div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <MapPin className="h-4 w-4 text-teal-500" />
+          <label className="flex items-center gap-2 text-sm font-semibold text-white/50 mb-2">
+            <MapPin className="h-4 w-4 text-violet-400" />
             Região
           </label>
           <select
             value={region}
             onChange={(e) => setRegion(e.target.value)}
-            className="w-full sm:w-72 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition"
+            className="w-full sm:w-72 px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
           >
             {regions.map((r) => (
-              <option key={r} value={r}>
+              <option key={r} value={r} className="bg-gray-900 text-white">
                 {r}
               </option>
             ))}
@@ -105,18 +105,18 @@ export default function PerfilPage() {
 
         {/* Notifications */}
         <div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-white/50 mb-2">
             {notifications ? (
-              <Bell className="h-4 w-4 text-teal-500" />
+              <Bell className="h-4 w-4 text-violet-400" />
             ) : (
-              <BellOff className="h-4 w-4 text-gray-400" />
+              <BellOff className="h-4 w-4 text-white/40" />
             )}
             Notificações
           </label>
           <button
             onClick={() => setNotifications((prev) => !prev)}
             className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-              notifications ? "bg-teal-500" : "bg-gray-300"
+              notifications ? "bg-violet-500" : "bg-white/20"
             }`}
           >
             <span
@@ -125,7 +125,7 @@ export default function PerfilPage() {
               }`}
             />
           </button>
-          <p className="text-xs text-gray-400 mt-1.5">
+          <p className="text-xs text-white/40 mt-1.5">
             {notifications
               ? "Você receberá alertas climáticos e atualizações."
               : "Notificações desativadas."}
@@ -134,17 +134,17 @@ export default function PerfilPage() {
 
         {/* Account Type Toggle */}
         <div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <User className="h-4 w-4 text-teal-500" />
+          <label className="flex items-center gap-2 text-sm font-semibold text-white/50 mb-2">
+            <User className="h-4 w-4 text-violet-400" />
             Tipo de Conta
           </label>
           <div className="flex gap-3">
             <button
               onClick={() => setAccountType("comum")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 accountType === "comum"
-                  ? "bg-teal-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/20"
+                  : "bg-white/[0.06] border border-white/10 text-white/60 hover:bg-white/[0.1]"
               }`}
             >
               <Shield className="h-4 w-4" />
@@ -152,10 +152,10 @@ export default function PerfilPage() {
             </button>
             <button
               onClick={() => setAccountType("avancada")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 accountType === "avancada"
-                  ? "bg-purple-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/20"
+                  : "bg-white/[0.06] border border-white/10 text-white/60 hover:bg-white/[0.1]"
               }`}
             >
               <Zap className="h-4 w-4" />
@@ -168,13 +168,13 @@ export default function PerfilPage() {
         <div className="flex items-center gap-4 pt-2">
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium bg-teal-600 text-white hover:bg-teal-700 transition-colors shadow-sm"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/20 hover:opacity-90 transition-opacity"
           >
             <Save className="h-4 w-4" />
             Salvar alterações
           </button>
           {saved && (
-            <span className="flex items-center gap-1.5 text-sm text-emerald-600 font-medium animate-pulse">
+            <span className="flex items-center gap-1.5 text-sm text-emerald-300 font-medium animate-pulse">
               <CheckCircle2 className="h-4 w-4" />
               Salvo com sucesso!
             </span>
@@ -183,9 +183,9 @@ export default function PerfilPage() {
       </div>
 
       {/* Info Note */}
-      <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-        <Info className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-        <p className="text-sm text-amber-700">
+      <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4">
+        <Info className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+        <p className="text-sm text-amber-200">
           Este é um protótipo de demonstração. Alterne entre conta comum e avançada para testar
           funcionalidades diferentes.
         </p>

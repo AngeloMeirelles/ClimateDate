@@ -10,8 +10,8 @@ interface Props {
 
 export default function ChartCard({ title, children, className = "" }: Props) {
   return (
-    <div className={`bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm ${className}`}>
-      <h3 className="text-sm font-semibold text-gray-700 mb-4">{title}</h3>
+    <div className={`glass rounded-2xl p-5 ${className}`}>
+      <h3 className="text-sm font-semibold text-white/80 mb-4">{title}</h3>
       {children}
     </div>
   );
