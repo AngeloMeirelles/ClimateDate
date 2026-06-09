@@ -74,19 +74,19 @@ export const airQualityPollutants = [
 
 // ── Region Comparison ──
 export const regionComparison = [
-  { region: "Centro", temp: 33, airQuality: 62, floodRisk: 45, humidity: 55, uvIndex: 9, windSpeed: 18 },
-  { region: "Zona Norte", temp: 31, airQuality: 38, floodRisk: 70, humidity: 72, uvIndex: 7, windSpeed: 12 },
-  { region: "Zona Sul", temp: 30, airQuality: 35, floodRisk: 30, humidity: 65, uvIndex: 8, windSpeed: 14 },
-  { region: "Zona Leste", temp: 32, airQuality: 55, floodRisk: 60, humidity: 68, uvIndex: 8, windSpeed: 10 },
-  { region: "Zona Oeste", temp: 29, airQuality: 30, floodRisk: 25, humidity: 62, uvIndex: 7, windSpeed: 16 },
+  { region: "São Paulo", temp: 33, airQuality: 62, floodRisk: 45, humidity: 55, uvIndex: 9, windSpeed: 18 },
+  { region: "Rio de Janeiro", temp: 35, airQuality: 48, floodRisk: 72, humidity: 78, uvIndex: 11, windSpeed: 14 },
+  { region: "Brasília", temp: 28, airQuality: 35, floodRisk: 15, humidity: 25, uvIndex: 10, windSpeed: 12 },
+  { region: "Manaus", temp: 34, airQuality: 55, floodRisk: 60, humidity: 88, uvIndex: 12, windSpeed: 8 },
+  { region: "Porto Alegre", temp: 22, airQuality: 28, floodRisk: 20, humidity: 70, uvIndex: 5, windSpeed: 20 },
 ];
 
 export const regionDetailedStats = [
-  { region: "Centro", population: "320 mil", alertCount: 1, riskLevel: "Alto", mainRisk: "Onda de calor", treesCoverage: "12%" },
-  { region: "Zona Norte", population: "580 mil", alertCount: 2, riskLevel: "Crítico", mainRisk: "Tempestade + Enchente", treesCoverage: "18%" },
-  { region: "Zona Sul", population: "450 mil", alertCount: 0, riskLevel: "Baixo", mainRisk: "Nenhum ativo", treesCoverage: "25%" },
-  { region: "Zona Leste", population: "620 mil", alertCount: 1, riskLevel: "Alto", mainRisk: "Enchente", treesCoverage: "15%" },
-  { region: "Zona Oeste", population: "390 mil", alertCount: 1, riskLevel: "Médio", mainRisk: "Qualidade do ar", treesCoverage: "22%" },
+  { region: "São Paulo", population: "12,4 mi", alertCount: 1, riskLevel: "Alto", mainRisk: "Onda de calor", treesCoverage: "12%" },
+  { region: "Rio de Janeiro", population: "6,7 mi", alertCount: 2, riskLevel: "Crítico", mainRisk: "Chuva + Deslizamento", treesCoverage: "28%" },
+  { region: "Brasília", population: "3,1 mi", alertCount: 1, riskLevel: "Médio", mainRisk: "Umidade baixa", treesCoverage: "35%" },
+  { region: "Manaus", population: "2,2 mi", alertCount: 1, riskLevel: "Alto", mainRisk: "Enchente", treesCoverage: "65%" },
+  { region: "Porto Alegre", population: "1,5 mi", alertCount: 0, riskLevel: "Baixo", mainRisk: "Nenhum ativo", treesCoverage: "22%" },
 ];
 
 // ── Hourly Forecast ──

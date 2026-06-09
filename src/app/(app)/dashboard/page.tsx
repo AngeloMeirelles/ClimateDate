@@ -1,16 +1,24 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
+  Sun,
+  Cloud,
+  CloudRain,
+  CloudLightning,
   Thermometer,
   Droplets,
-  Sun,
   Wind,
-  Waves,
-  CloudLightning,
-  Info,
-  Lock,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  Umbrella,
   Zap,
-  FileText,
+  Clock,
+  MapPin,
+  AlertTriangle,
+  Star,
+  Flame,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -31,9 +39,14 @@ import {
 } from "recharts";
 
 import { useAuth } from "@/contexts/AuthContext";
-import IndicatorCard from "@/components/IndicatorCard";
 import ChartCard from "@/components/ChartCard";
-import PageHeader from "@/components/PageHeader";
+import {
+  getSmartSummary,
+  getComfortBlock,
+  getRainBlock,
+  getQualityBlock,
+  smartAlerts,
+} from "@/data/mockSmartSummary";
 import {
   currentIndicators,
   temperatureWeek,
@@ -47,6 +60,9 @@ import {
   hourlyForecast,
   hourlyStats,
 } from "@/data/mockClimateData";
+import { riskLevelConfig, type Region } from "@/data/mockRegions";
+
+const FAVORITES_KEY = "climatedate_favorites";
 
 const tooltipStyle = {
   background: "rgba(15,10,30,0.9)",
@@ -55,6 +71,51 @@ const tooltipStyle = {
   color: "#fff",
   fontSize: "12px",
 };
+
+function WeatherIcon({ type, size = 48 }: { type: string; size?: number }) {
+  const iconMap: Record<string, React.ReactNode> = {
+    sun: <Sun size={size} className="text-amber-400" />,
+    cloud: <Cloud size={size} className="text-slate-300" />,
+    rain: <CloudRain size={size} className="text-cyan-400" />,
+    storm: <CloudLightning size={size} className="text-purple-400" />,
+    hot: <Flame size={size} className="text-orange-400" />,
+  };
+  return <>{iconMap[type] || iconMap.sun}</>;
+}
+
+function SmartAlertCard({ alert }: { alert: typeof smartAlerts[0] }) {
+  const iconMap: Record<string, React.ReactNode> = {
+    storm: <CloudLightning size={20} className="text-purple-400" />,
+    flood: <Droplets size={20} className="text-blue-400" />,
+    heat: <Flame size={20} className="text-orange-400" />,
+    wind: <Wind size={20} className="text-cyan-400" />,
+    air: <Wind size={20} className="text-emerald-400" />,
+  };
+
+  const severityColors: Record<string, string> = {
+    critical: "border-red-500/30 bg-red-500/[0.06]",
+    high: "border-orange-500/30 bg-orange-500/[0.06]",
+    medium: "border-amber-500/30 bg-amber-500/[0.06]",
+    low: "border-emerald-500/30 bg-emerald-500/[0.06]",
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 ${severityColors[alert.severity]}`}>
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5">{iconMap[alert.icon]}</div>
+        <div className="flex-1 min-w-0">
+          <h4 className="text-sm font-semibold text-white">{alert.title}</h4>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-white/50">
+            <span className="flex items-center gap-1"><Clock size={11} />{alert.when}</span>
+            <span className="flex items-center gap-1"><MapPin size={11} />{alert.where}</span>
+          </div>
+          <p className="text-xs text-white/40 mt-2">{alert.impact}</p>
+          <p className="text-xs text-white/60 mt-1.5 font-medium">{alert.recommendation}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function DetailTable({ data }: { data: { label: string; value: string; detail: string }[] }) {
   return (
@@ -81,69 +142,238 @@ function DetailTable({ data }: { data: { label: string; value: string; detail: s
   );
 }
 
-function InfoBox({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-4 flex items-start gap-2 p-3 bg-violet-500/10 border border-violet-500/20 rounded-xl">
-      <Info size={16} className="text-violet-400 mt-0.5 shrink-0" />
-      <p className="text-xs text-violet-200">{children}</p>
-    </div>
-  );
-}
-
-export default function DashboardPage() {
+export default function HojePage() {
   const { user } = useAuth();
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Bom dia";
-    if (hour < 18) return "Boa tarde";
-    return "Boa noite";
-  };
-
+  const [showTechnical, setShowTechnical] = useState(false);
+  const [favorites, setFavorites] = useState<Region[]>([]);
   const isAdvanced = user?.accountType === "avancada";
 
-  return (
-    <div className="space-y-8">
-      <PageHeader
-        title={`${getGreeting()}, ${user?.name ?? "Usuário"}`}
-        description="Acompanhe os principais indicadores climáticos da sua região."
-        action={
-          <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${
-            isAdvanced
-              ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-              : "bg-white/10 text-white/60 border border-white/10"
-          }`}>
-            {isAdvanced ? <Zap size={13} /> : <Lock size={13} />}
-            {isAdvanced ? "Conta Avançada" : "Conta Comum"}
-          </span>
-        }
-      />
+  const summary = getSmartSummary();
+  const comfort = getComfortBlock();
+  const rain = getRainBlock();
+  const quality = getQualityBlock();
 
-      {/* Indicator Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <IndicatorCard title="Temperatura" value={currentIndicators.temperature.value} unit={currentIndicators.temperature.unit} trend={currentIndicators.temperature.trend} icon={<Thermometer className="h-5 w-5" />} color="from-red-500 to-orange-500" />
-        <IndicatorCard title="Umidade" value={currentIndicators.humidity.value} unit={currentIndicators.humidity.unit} trend={currentIndicators.humidity.trend} icon={<Droplets className="h-5 w-5" />} color="from-blue-500 to-cyan-500" />
-        <IndicatorCard title="Índice UV" value={currentIndicators.uvIndex.value} unit={currentIndicators.uvIndex.unit} trend={currentIndicators.uvIndex.trend} icon={<Sun className="h-5 w-5" />} color="from-yellow-500 to-orange-500" />
-        <IndicatorCard title="Qualidade do Ar" value={currentIndicators.airQuality.value} unit={currentIndicators.airQuality.unit} trend={currentIndicators.airQuality.trend} icon={<Wind className="h-5 w-5" />} color="from-teal-500 to-emerald-500" />
-        <IndicatorCard title="Risco de Enchente" value={currentIndicators.floodRisk.value} unit={currentIndicators.floodRisk.unit} trend={currentIndicators.floodRisk.trend} icon={<Waves className="h-5 w-5" />} color="from-blue-600 to-indigo-500" />
-        <IndicatorCard title="Prob. Tempestade" value={currentIndicators.stormProbability.value} unit={currentIndicators.stormProbability.unit} trend={currentIndicators.stormProbability.trend} icon={<CloudLightning className="h-5 w-5" />} color="from-purple-500 to-indigo-500" />
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(FAVORITES_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && (parsed.length === 0 || (typeof parsed[0] === "object" && parsed[0].latlng))) {
+          setFavorites(parsed);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* ═══════════════════════════════════════════
+          HERO CARD — Resumo inteligente do dia
+         ═══════════════════════════════════════════ */}
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 p-8 md:p-10"
+        style={{
+          background: "linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(59,130,246,0.1) 50%, rgba(6,182,212,0.08) 100%)",
+          backdropFilter: "blur(20px)",
+        }}
+      >
+        {/* Subtle animated gradient orb */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-violet-500/20 to-cyan-500/10 rounded-full blur-3xl -translate-y-1/3 translate-x-1/3" />
+
+        <div className="relative z-10">
+          {/* Greeting + Account Badge */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm text-white/50 font-medium">
+              {summary.greeting}, {user?.name ?? "Usuário"}
+            </p>
+            <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+              isAdvanced
+                ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                : "bg-white/10 text-white/50 border border-white/10"
+            }`}>
+              {isAdvanced ? <><Zap size={10} /> Pro</> : "Básica"}
+            </span>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+            {/* Weather Icon + Temp */}
+            <div className="flex items-center gap-5">
+              <div className="relative">
+                <WeatherIcon type={summary.icon} size={56} />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500/80 rounded-full border-2 border-[rgba(15,10,30,0.85)]" />
+              </div>
+              <div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-5xl font-bold text-white tracking-tight">{summary.temperature}</span>
+                  <span className="text-2xl text-white/50 font-light">°C</span>
+                </div>
+                <p className="text-sm text-white/40 mt-0.5">
+                  Sensação de {summary.feelsLike}°C
+                </p>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="hidden md:block w-px h-20 bg-white/10" />
+
+            {/* Summary Text */}
+            <div className="flex-1">
+              <p className="text-lg md:text-xl text-white font-medium leading-relaxed">
+                {summary.mainSummary}
+              </p>
+              <p className="text-sm text-violet-300/80 mt-3 flex items-center gap-1.5">
+                <Clock size={13} />
+                Melhor horário para sair: <span className="font-semibold text-white/80">{summary.bestTime}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Detail bullets */}
+          <div className="mt-6 pt-5 border-t border-white/[0.06]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {summary.details.map((detail, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm text-white/50">
+                  <span className="w-1 h-1 mt-2 bg-violet-400 rounded-full shrink-0" />
+                  <span>{detail}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════
-          CHARTS — cada gráfico é completo na conta avançada
-         ═══════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 gap-6">
+      {/* ═══════════════════════════════════════════
+          3 BLOCOS RESUMIDOS
+         ═══════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Conforto Térmico */}
+        <div className="glass rounded-2xl p-5 border border-white/[0.06]">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-orange-500/15 flex items-center justify-center">
+              <Thermometer size={16} className="text-orange-400" />
+            </div>
+            <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">{comfort.title}</h3>
+          </div>
+          <p className="text-sm text-white font-medium leading-relaxed">{comfort.summary}</p>
+          <p className="text-xs text-white/40 mt-2">{comfort.detail}</p>
+        </div>
 
-        {/* ─── 1. TEMPERATURA ─── */}
-        <ChartCard title="Evolução da Temperatura (Semana)">
-          {isAdvanced && (
-            <InfoBox>
-              O gráfico mostra a temperatura real (máx/mín), sensação térmica e a média histórica dos últimos 10 anos.
-              A amplitude térmica, ponto de orvalho e umidade são fatores que influenciam a sensação térmica.
-            </InfoBox>
+        {/* Chuva e Alertas */}
+        <div className="glass rounded-2xl p-5 border border-white/[0.06]">
+          <div className="flex items-center gap-2 mb-3">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${rain.hasRain ? "bg-cyan-500/15" : "bg-emerald-500/15"}`}>
+              {rain.hasRain ? <Umbrella size={16} className="text-cyan-400" /> : <Sun size={16} className="text-emerald-400" />}
+            </div>
+            <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">{rain.title}</h3>
+          </div>
+          <p className="text-sm text-white font-medium leading-relaxed">{rain.summary}</p>
+          {rain.expectedTime && (
+            <p className="text-xs text-cyan-300/70 mt-1.5 flex items-center gap-1">
+              <Clock size={10} /> Esperada: {rain.expectedTime}
+            </p>
           )}
-          <ResponsiveContainer width="100%" height={isAdvanced ? 320 : 280}>
-            {isAdvanced ? (
+          <p className="text-xs text-white/40 mt-2">{rain.recommendation}</p>
+        </div>
+
+        {/* Qualidade do Dia */}
+        <div className="glass rounded-2xl p-5 border border-white/[0.06]">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+              <Wind size={16} className="text-emerald-400" />
+            </div>
+            <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider">{quality.title}</h3>
+          </div>
+          <p className="text-sm text-white font-medium leading-relaxed">{quality.summary}</p>
+          <p className="text-xs text-white/40 mt-2">{quality.recommendation}</p>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════
+          ALERTAS INTELIGENTES
+         ═══════════════════════════════════════════ */}
+      {smartAlerts.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-white/60 flex items-center gap-2">
+              <AlertTriangle size={15} className="text-amber-400" />
+              Alertas para hoje
+            </h2>
+            <Link href="/alertas" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
+              Ver todos
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {smartAlerts.map((alert) => (
+              <SmartAlertCard key={alert.id} alert={alert} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════
+          REGIÕES MONITORADAS
+         ═══════════════════════════════════════════ */}
+      {favorites.length > 0 && (
+        <div className="glass rounded-2xl p-5 border border-white/[0.06]">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-white/70 flex items-center gap-2">
+              <Star size={15} className="text-amber-400" />
+              Minhas Regiões
+            </h3>
+            <Link href="/mapa" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
+              Gerenciar
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {favorites.slice(0, 6).map((r) => {
+              const cfg = riskLevelConfig[r.riskLevel];
+              return (
+                <Link key={r.id} href="/mapa" className="flex items-center gap-3 p-3 bg-white/[0.04] rounded-xl hover:bg-white/[0.08] transition-colors">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cfg.mapColor }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white">{r.name}</p>
+                    <p className="text-xs text-white/40">{r.temperature}°C • {cfg.label}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════
+          CONTA PRO — CENTRAL TÉCNICA COMPLETA
+          (sempre visível, sem colapsável)
+         ═══════════════════════════════════════════ */}
+      {isAdvanced && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <Zap size={15} className="text-violet-400" />
+            <h2 className="text-sm font-semibold text-white/60">Central Técnica</h2>
+          </div>
+
+          {/* Indicator Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+            {[
+              { label: "Temperatura", value: `${currentIndicators.temperature.value}°C`, color: "from-red-500 to-orange-500" },
+              { label: "Umidade", value: `${currentIndicators.humidity.value}%`, color: "from-blue-500 to-cyan-500" },
+              { label: "Índice UV", value: `${currentIndicators.uvIndex.value}`, color: "from-yellow-500 to-orange-500" },
+              { label: "Qualidade do Ar", value: `${currentIndicators.airQuality.value} AQI`, color: "from-teal-500 to-emerald-500" },
+              { label: "Risco Enchente", value: `${currentIndicators.floodRisk.value}%`, color: "from-blue-600 to-indigo-500" },
+              { label: "Prob. Tempestade", value: `${currentIndicators.stormProbability.value}%`, color: "from-purple-500 to-indigo-500" },
+            ].map((ind) => (
+              <div key={ind.label} className="glass rounded-xl p-3 border border-white/[0.06]">
+                <p className="text-[10px] text-white/40 font-medium uppercase tracking-wider">{ind.label}</p>
+                <p className="text-lg font-bold text-white mt-1">{ind.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Temperature Chart */}
+          <ChartCard title="Evolução da Temperatura (Semana)">
+            <ResponsiveContainer width="100%" height={320}>
               <ComposedChart data={temperatureWeek}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                 <XAxis dataKey="day" stroke="#ffffff40" fontSize={12} />
@@ -158,31 +388,13 @@ export default function DashboardPage() {
                 <Line yAxisId="temp" type="monotone" dataKey="min" name="Mínima Real" stroke="#22d3ee" strokeWidth={2.5} dot={{ r: 4, fill: "#22d3ee" }} activeDot={{ r: 6 }} />
                 <Line yAxisId="temp" type="monotone" dataKey="avgHistoric" name="Média Histórica" stroke="#ffffff40" strokeWidth={1.5} strokeDasharray="3 3" dot={false} />
               </ComposedChart>
-            ) : (
-              <LineChart data={temperatureWeek}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                <XAxis dataKey="day" stroke="#ffffff40" fontSize={12} />
-                <YAxis stroke="#ffffff40" fontSize={12} unit="°C" />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ color: "#ffffffcc" }} />
-                <Line type="monotone" dataKey="temp" name="Máxima" stroke="#34d399" strokeWidth={2.5} dot={{ r: 4, fill: "#34d399" }} />
-                <Line type="monotone" dataKey="min" name="Mínima" stroke="#22d3ee" strokeWidth={2.5} dot={{ r: 4, fill: "#22d3ee" }} />
-              </LineChart>
-            )}
-          </ResponsiveContainer>
-          {isAdvanced && <DetailTable data={temperatureStats} />}
-        </ChartCard>
+            </ResponsiveContainer>
+            <DetailTable data={temperatureStats} />
+          </ChartCard>
 
-        {/* ─── 2. PRECIPITAÇÃO ─── */}
-        <ChartCard title="Precipitação Mensal (mm)">
-          {isAdvanced && (
-            <InfoBox>
-              Comparação entre o volume de chuva registrado e a média histórica (últimos 10 anos).
-              O número de dias chuvosos e o máximo em 24h ajudam a avaliar a intensidade das chuvas.
-            </InfoBox>
-          )}
-          <ResponsiveContainer width="100%" height={isAdvanced ? 320 : 280}>
-            {isAdvanced ? (
+          {/* Rainfall Chart */}
+          <ChartCard title="Precipitação Mensal (mm)">
+            <ResponsiveContainer width="100%" height={320}>
               <ComposedChart data={rainfallMonthly}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                 <XAxis dataKey="month" stroke="#ffffff40" fontSize={12} />
@@ -193,31 +405,14 @@ export default function DashboardPage() {
                 <Bar yAxisId="vol" dataKey="volume" name="Volume Real (mm)" fill="#22d3ee" radius={[4, 4, 0, 0]} barSize={16} />
                 <Bar yAxisId="vol" dataKey="avgHistoric" name="Média Histórica (mm)" fill="#34d399" radius={[4, 4, 0, 0]} barSize={16} opacity={0.5} />
                 <Line yAxisId="days" type="monotone" dataKey="rainyDays" name="Dias de Chuva" stroke="#a78bfa" strokeWidth={2.5} dot={{ r: 4, fill: "#a78bfa" }} />
-                <Line yAxisId="vol" type="monotone" dataKey="maxDay" name="Máx. 24h (mm)" stroke="#fb923c" strokeWidth={1.5} strokeDasharray="4 4" dot={{ r: 3 }} />
               </ComposedChart>
-            ) : (
-              <BarChart data={rainfallMonthly}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                <XAxis dataKey="month" stroke="#ffffff40" fontSize={12} />
-                <YAxis stroke="#ffffff40" fontSize={12} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="volume" name="Volume (mm)" fill="#22d3ee" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            )}
-          </ResponsiveContainer>
-          {isAdvanced && <DetailTable data={rainfallStats} />}
-        </ChartCard>
+            </ResponsiveContainer>
+            <DetailTable data={rainfallStats} />
+          </ChartCard>
 
-        {/* ─── 3. QUALIDADE DO AR ─── */}
-        <ChartCard title="Qualidade do Ar — Poluentes Detalhados (Semana)">
-          {isAdvanced && (
-            <InfoBox>
-              O índice AQI é calculado a partir dos poluentes PM2.5, PM10, O₃, NO₂, SO₂ e CO.
-              O poluente com maior concentração relativa ao seu limite define o valor final do AQI.
-            </InfoBox>
-          )}
-          <ResponsiveContainer width="100%" height={isAdvanced ? 320 : 280}>
-            {isAdvanced ? (
+          {/* Air Quality Chart */}
+          <ChartCard title="Qualidade do Ar — Poluentes Detalhados (Semana)">
+            <ResponsiveContainer width="100%" height={320}>
               <ComposedChart data={airQualityWeek}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                 <XAxis dataKey="day" stroke="#ffffff40" fontSize={12} />
@@ -232,25 +427,7 @@ export default function DashboardPage() {
                 <Line yAxisId="left" type="monotone" dataKey="o3" name="O₃ (Ozônio)" stroke="#fb923c" strokeWidth={2} dot={{ r: 3 }} />
                 <Line yAxisId="right" type="monotone" dataKey="aqi" name="AQI Total" stroke="#34d399" strokeWidth={3} dot={{ r: 4, fill: "#34d399" }} />
               </ComposedChart>
-            ) : (
-              <AreaChart data={airQualityWeek}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                <XAxis dataKey="day" stroke="#ffffff40" fontSize={12} />
-                <YAxis stroke="#ffffff40" fontSize={12} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <defs>
-                  <linearGradient id="aqiGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#34d399" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey="aqi" name="AQI" stroke="#34d399" strokeWidth={2} fill="url(#aqiGrad)" />
-              </AreaChart>
-            )}
-          </ResponsiveContainer>
-
-          {/* Pollutant Table — advanced only */}
-          {isAdvanced && (
+            </ResponsiveContainer>
             <div className="mt-4 border border-white/5 rounded-xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
@@ -289,19 +466,11 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
-          )}
-        </ChartCard>
+          </ChartCard>
 
-        {/* ─── 4. PREVISÃO HORÁRIA ─── */}
-        <ChartCard title="Previsão Horária — Hoje">
-          {isAdvanced && (
-            <InfoBox>
-              Previsão detalhada com temperatura real, sensação térmica, índice UV, umidade, vento e probabilidade de chuva ao longo do dia.
-              A sensação térmica combina temperatura, umidade e velocidade do vento.
-            </InfoBox>
-          )}
-          <ResponsiveContainer width="100%" height={isAdvanced ? 340 : 280}>
-            {isAdvanced ? (
+          {/* Hourly Forecast */}
+          <ChartCard title="Previsão Horária — Hoje">
+            <ResponsiveContainer width="100%" height={340}>
               <ComposedChart data={hourlyForecast}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                 <XAxis dataKey="hour" stroke="#ffffff40" fontSize={11} />
@@ -317,33 +486,13 @@ export default function DashboardPage() {
                 <Line yAxisId="temp" type="monotone" dataKey="uvIndex" name="Índice UV" stroke="#facc15" strokeWidth={2} dot={{ r: 3, fill: "#facc15" }} />
                 <Line yAxisId="temp" type="monotone" dataKey="wind" name="Vento (km/h)" stroke="#a78bfa" strokeWidth={1.5} strokeDasharray="4 4" dot={{ r: 2 }} />
               </ComposedChart>
-            ) : (
-              <ComposedChart data={hourlyForecast}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                <XAxis dataKey="hour" stroke="#ffffff40" fontSize={11} />
-                <YAxis yAxisId="temp" stroke="#ffffff40" fontSize={11} />
-                <YAxis yAxisId="hum" orientation="right" stroke="#ffffff40" fontSize={11} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ fontSize: "11px", color: "#ffffffcc" }} />
-                <Area yAxisId="hum" type="monotone" dataKey="humidity" name="Umidade (%)" fill="#22d3ee" stroke="#22d3ee" strokeWidth={1.5} fillOpacity={0.15} />
-                <Line yAxisId="temp" type="monotone" dataKey="temp" name="Temperatura (°C)" stroke="#f472b6" strokeWidth={2.5} dot={{ r: 3 }} />
-                <Line yAxisId="temp" type="monotone" dataKey="wind" name="Vento (km/h)" stroke="#a78bfa" strokeWidth={1.5} strokeDasharray="4 4" dot={{ r: 2 }} />
-              </ComposedChart>
-            )}
-          </ResponsiveContainer>
-          {isAdvanced && <DetailTable data={hourlyStats} />}
-        </ChartCard>
+            </ResponsiveContainer>
+            <DetailTable data={hourlyStats} />
+          </ChartCard>
 
-        {/* ─── 5. COMPARAÇÃO POR REGIÃO ─── */}
-        <ChartCard title="Comparação por Região">
-          {isAdvanced && (
-            <InfoBox>
-              Comparação completa entre as regiões incluindo temperatura, AQI, risco de enchente, umidade, UV e vento.
-              A tabela abaixo mostra dados populacionais, alertas ativos e cobertura vegetal.
-            </InfoBox>
-          )}
-          <ResponsiveContainer width="100%" height={isAdvanced ? 340 : 280}>
-            {isAdvanced ? (
+          {/* Region Comparison */}
+          <ChartCard title="Comparação por Região">
+            <ResponsiveContainer width="100%" height={340}>
               <BarChart data={regionComparison}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
                 <XAxis dataKey="region" stroke="#ffffff40" fontSize={11} />
@@ -357,22 +506,7 @@ export default function DashboardPage() {
                 <Bar dataKey="uvIndex" name="Índice UV" fill="#facc15" radius={[3, 3, 0, 0]} />
                 <Bar dataKey="windSpeed" name="Vento (km/h)" fill="#f472b6" radius={[3, 3, 0, 0]} />
               </BarChart>
-            ) : (
-              <BarChart data={regionComparison}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                <XAxis dataKey="region" stroke="#ffffff40" fontSize={11} />
-                <YAxis stroke="#ffffff40" fontSize={12} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ fontSize: "11px", color: "#ffffffcc" }} />
-                <Bar dataKey="temp" name="Temperatura (°C)" fill="#34d399" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="airQuality" name="AQI" fill="#22d3ee" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="floodRisk" name="Risco Enchente (%)" fill="#a78bfa" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            )}
-          </ResponsiveContainer>
-
-          {/* Region Detail Table — advanced only */}
-          {isAdvanced && (
+            </ResponsiveContainer>
             <div className="mt-4 border border-white/5 rounded-xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
@@ -417,50 +551,112 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
-          )}
-        </ChartCard>
-      </div>
-
-      {/* Account-specific banner */}
-      {isAdvanced ? (
-        <div className="bg-white/[0.06] backdrop-blur-xl border border-purple-500/20 rounded-2xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center shrink-0">
-              <FileText className="h-6 w-6 text-purple-400" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-white">Acesso Avançado Ativo</h3>
-              <p className="text-sm text-white/60 mt-1">
-                Você tem acesso completo a relatórios detalhados, exportação de dados em CSV e análises aprofundadas por região.
-              </p>
-              <Link
-                href="/relatorios"
-                className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-500 transition-colors"
-              >
-                <FileText size={16} />
-                Acessar Relatórios
-              </Link>
-            </div>
-          </div>
+          </ChartCard>
         </div>
-      ) : (
-        <div className="bg-white/[0.06] backdrop-blur-xl border border-amber-500/20 rounded-2xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center shrink-0">
-              <Lock className="h-6 w-6 text-amber-400" />
+      )}
+
+      {/* ═══════════════════════════════════════════
+          CONTA BÁSICA — DETALHES TÉCNICOS (COLAPSÁVEL)
+         ═══════════════════════════════════════════ */}
+      {!isAdvanced && (
+        <div className="border-t border-white/[0.06] pt-4">
+          <button
+            onClick={() => setShowTechnical(!showTechnical)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] transition-all"
+          >
+            <span className="flex items-center gap-2 text-sm text-white/50 font-medium">
+              <Eye size={15} />
+              Explorar detalhes técnicos
+            </span>
+            {showTechnical ? (
+              <ChevronUp size={16} className="text-white/40" />
+            ) : (
+              <ChevronDown size={16} className="text-white/40" />
+            )}
+          </button>
+
+          {showTechnical && (
+            <div className="mt-6 space-y-6">
+              <ChartCard title="Evolução da Temperatura (Semana)">
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart data={temperatureWeek}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                    <XAxis dataKey="day" stroke="#ffffff40" fontSize={12} />
+                    <YAxis stroke="#ffffff40" fontSize={12} unit="°C" />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend wrapperStyle={{ color: "#ffffffcc" }} />
+                    <Line type="monotone" dataKey="temp" name="Máxima" stroke="#34d399" strokeWidth={2.5} dot={{ r: 4, fill: "#34d399" }} />
+                    <Line type="monotone" dataKey="min" name="Mínima" stroke="#22d3ee" strokeWidth={2.5} dot={{ r: 4, fill: "#22d3ee" }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="Precipitação Mensal (mm)">
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={rainfallMonthly}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                    <XAxis dataKey="month" stroke="#ffffff40" fontSize={12} />
+                    <YAxis stroke="#ffffff40" fontSize={12} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="volume" name="Volume (mm)" fill="#22d3ee" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="Qualidade do Ar (Semana)">
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={airQualityWeek}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                    <XAxis dataKey="day" stroke="#ffffff40" fontSize={12} />
+                    <YAxis stroke="#ffffff40" fontSize={12} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <defs>
+                      <linearGradient id="aqiGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#34d399" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Area type="monotone" dataKey="aqi" name="AQI" stroke="#34d399" strokeWidth={2} fill="url(#aqiGrad)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="Previsão Horária — Hoje">
+                <ResponsiveContainer width="100%" height={240}>
+                  <ComposedChart data={hourlyForecast}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                    <XAxis dataKey="hour" stroke="#ffffff40" fontSize={11} />
+                    <YAxis yAxisId="temp" stroke="#ffffff40" fontSize={11} />
+                    <YAxis yAxisId="pct" orientation="right" stroke="#ffffff40" fontSize={11} unit="%" />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend wrapperStyle={{ fontSize: "11px", color: "#ffffffcc" }} />
+                    <Area yAxisId="pct" type="monotone" dataKey="rainProb" name="Prob. Chuva (%)" fill="#22d3ee" stroke="#22d3ee" strokeWidth={1.5} fillOpacity={0.15} />
+                    <Line yAxisId="temp" type="monotone" dataKey="temp" name="Temperatura (°C)" stroke="#34d399" strokeWidth={2.5} dot={{ r: 3, fill: "#34d399" }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </ChartCard>
             </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-white">Desbloqueie Recursos Avançados</h3>
-              <p className="text-sm text-white/60 mt-1">
-                Com a conta avançada, você acessa gráficos completos com todas as variáveis, tabelas detalhadas, relatórios e exportação de dados.
-              </p>
-              <Link
-                href="/perfil"
-                className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-xl hover:bg-amber-500 transition-colors"
-              >
-                <Zap size={16} />
-                Fazer Upgrade
-              </Link>
+          )}
+
+          {/* Upgrade Banner */}
+          <div className="mt-6 rounded-2xl border border-violet-500/20 p-6" style={{ background: "rgba(124,58,237,0.06)" }}>
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-violet-500/20 flex items-center justify-center shrink-0">
+                <Zap className="h-5 w-5 text-violet-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-white">Quer mais profundidade?</h3>
+                <p className="text-sm text-white/50 mt-1">
+                  Com a conta Pro você acessa gráficos completos, tabelas detalhadas, comparação por região, relatórios e muito mais.
+                </p>
+                <Link
+                  href="/perfil"
+                  className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-500 transition-colors"
+                >
+                  <Zap size={14} />
+                  Fazer Upgrade
+                </Link>
+              </div>
             </div>
           </div>
         </div>

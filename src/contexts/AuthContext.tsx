@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 
 export type AccountType = "comum" | "avancada";
 
@@ -14,34 +14,43 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => void;
   register: (name: string, email: string, password: string, accountType: AccountType) => void;
   logout: () => void;
   updateProfile: (updates: Partial<User>) => void;
 }
 
+const STORAGE_KEY = "climatedate_user";
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("climatedate_user");
-    if (stored) {
-      setUser(JSON.parse(stored));
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
+    } catch {
+      // ignore
     }
+    setLoading(false);
   }, []);
 
-  const persist = (u: User | null) => {
+  const persist = useCallback((u: User | null) => {
     if (u) {
-      localStorage.setItem("climatedate_user", JSON.stringify(u));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
     } else {
-      localStorage.removeItem("climatedate_user");
+      localStorage.removeItem(STORAGE_KEY);
     }
     setUser(u);
-  };
+  }, []);
 
-  const login = (email: string, _password: string) => {
+  const login = useCallback((email: string, _password: string) => {
     const u: User = {
       name: email.split("@")[0],
       email,
@@ -50,21 +59,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       notifications: true,
     };
     persist(u);
-  };
+  }, [persist]);
 
-  const register = (name: string, email: string, _password: string, accountType: AccountType) => {
+  const register = useCallback((name: string, email: string, _password: string, accountType: AccountType) => {
     const u: User = { name, email, accountType, region: "Centro", notifications: true };
     persist(u);
-  };
+  }, [persist]);
 
-  const logout = () => persist(null);
+  const logout = useCallback(() => persist(null), [persist]);
 
-  const updateProfile = (updates: Partial<User>) => {
-    if (user) persist({ ...user, ...updates });
-  };
+  const updateProfile = useCallback((updates: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...updates };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
